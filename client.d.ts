@@ -50,14 +50,18 @@ type ReactionUserFetchOptions = {
 
 declare module "discord.js-light" {
 	interface ClientOptions {
-		cacheChannels?:boolean
-		cacheGuilds?:boolean
-		cachePresences?:boolean
-		cacheRoles?:boolean
-		cacheOverwrites?:boolean
-		cacheEmojis?:boolean
-		cacheMembers?:boolean
+		cacheChannels?: boolean
+		cacheGuilds?: boolean
+		cachePresences?: boolean
+		cacheRoles?: boolean
+		cacheOverwrites?: boolean
+		cacheEmojis?: boolean
+		cacheMembers?: boolean
 		disabledEvents?: Array<string>
+		channelSweepInterval?: number
+		userSweepInterval?: number
+		channelCacheLifetime?: number
+		userCacheLifetime?: number
 	}
 	interface ClientEvents {
 		rest:[{path:string,method:string,response?:Promise<Buffer>}]

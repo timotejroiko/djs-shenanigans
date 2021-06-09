@@ -17,6 +17,10 @@ Discord.Client = class Client extends Discord.Client {
 			cacheEmojis: false,
 			cacheMembers: false,
 			disabledEvents: [],
+			channelCacheLifetime: 86400,
+			channelSweepInterval: 0,
+			userCacheLifetime: 86400,
+			userSweepInterval: 0,
 			..._options
 		};
 		super(options);
@@ -68,21 +72,39 @@ Discord.Client = class Client extends Discord.Client {
 				});
 			}
 		}
+		if (options.userSweepInterval > 0) {
+			this.setInterval(this.sweepUsers.bind(this), options.userSweepInterval * 1000);
+		}
+		if (options.channelSweepInterval > 0) {
+			this.setInterval(this.sweepChannels.bind(this), options.channelSweepInterval * 1000);
+		}
 	}
-	sweepUsers(_lifetime = 86400) {
-		const lifetime = _lifetime * 1000;
-		this.users.cache.sweep(t => t.id !== this.user.id && (!t.lastMessageID || Date.now() - Discord.SnowflakeUtil.deconstruct(t.lastMessageID).timestamp > lifetime));
-		for(const guild of this.guilds.cache.values()) {
+
+	/**
+	 * Sweeps all cached Users and Members whose last message is older than the supplied time.
+	 * @param {number} lifetime User's last message's age in seconds. Defaults to 86400 (24 hours).
+	 * @returns {void}
+	 */
+	sweepUsers(lifetime = 86400) {
+		const _lifetime = lifetime * 1000;
+		this.users.cache.sweep(t => t.id !== this.user.id && (!t.lastMessageID || Date.now() - Discord.SnowflakeUtil.deconstruct(t.lastMessageID).timestamp > _lifetime));
+		for (const guild of this.guilds.cache.values()) {
 			guild.members.cache.sweep(t => !this.users.cache.has(t.id));
 			guild.presences.cache.sweep(t => !this.users.cache.has(t.id) && !this.options.cachePresences);
 		}
 	}
-	sweepChannels(_lifetime = 86400) {
-		const lifetime = _lifetime * 1000;
-		if(this.options.cacheChannels) { return; }
+
+	/**
+	 * Sweeps all cached Channels whose last message is older than the supplied time.
+	 * @param {number} lifetime Channel's last message's age in seconds. Defaults to 86400 (24 hours).
+	 * @returns {void}
+	 */
+	sweepChannels(lifetime = 86400) {
+		const _lifetime = lifetime * 1000;
+		if (this.options.cacheChannels) { return; }
 		const connections = this.voice ? this.voice.connections.map(t => t.channel.id) : [];
-		this.channels.cache.sweep(t => !connections.includes(t.id) && (!t.lastMessageID || Date.now() - Discord.SnowflakeUtil.deconstruct(t.lastMessageID).timestamp > lifetime));
-		for(const guild of this.guilds.cache.values()) {
+		this.channels.cache.sweep(t => !connections.includes(t.id) && (!t.lastMessageID || Date.now() - Discord.SnowflakeUtil.deconstruct(t.lastMessageID).timestamp > _lifetime));
+		for (const guild of this.guilds.cache.values()) {
 			guild.channels.cache.sweep(t => !this.channels.cache.has(t.id));
 		}
 	}
